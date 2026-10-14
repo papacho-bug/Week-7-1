@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중학 영단어 마스터</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --correct: #10B981;
+            --wrong: #EF4444;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 24px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .nav-buttons button {
+            flex: 1;
+            padding: 12px 8px;
+            border: none;
+            border-radius: 8px;
+            background-color: #E5E7EB;
+            color: var(--text-main);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .nav-buttons button.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* Flashcard Styles */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 250px;
+            margin-bottom: 20px;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid #E5E7EB;
+            background: white;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: #F8FAFC;
+        }
+
+        .word-text { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
+        .meaning-text { font-size: 28px; font-weight: bold; color: var(--primary); }
+        .hint-text { font-size: 14px; color: var(--text-muted); }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .btn:disabled { background-color: #9CA3AF; cursor: not-allowed; }
+
+        /* Matching Game Styles */
+        .matching-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .match-card {
+            padding: 20px;
+            text-align: center;
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .match-card.selected { border-color: var(--primary); background: #EEF2FF; }
+        .match-card.matched { visibility: hidden; opacity: 0; }
+        
+        .game-status {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* Test Styles */
+        .test-box {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .test-question {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .test-input {
+            width: 80%;
+            max-width: 300px;
+            padding: 12px;
+            font-size: 18px;
+            border: 2px solid #D1D5DB;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .test-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .feedback {
+            min-height: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .feedback.wrong { color: var(--wrong); }
+        .feedback.correct { color: var(--correct); }
+        .test-progress { margin-bottom: 15px; color: var(--text-muted); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>중학 영단어 마스터</h1>
+    
+    <!-- 탭 내비게이션 -->
+    <div class="nav-buttons">
+        <button id="tab-btn-flashcard" class="active" data-target="flashcard-view">1. 플래시카드</button>
+        <button id="tab-btn-matching" data-target="matching-view">2. 짝맞추기</button>
+        <button id="tab-btn-test" data-target="test-view">3. 실전 테스트</button>
+    </div>
+
+    <!-- 1. 플래시카드 뷰 -->
+    <div id="flashcard-view" class="view-section active">
+        <div class="controls" style="margin-bottom: 10px; justify-content: center;">
+            <span id="fc-counter" style="font-weight: bold; color: var(--text-muted);">1 / 20</span>
+        </div>
+        <div class="flashcard-container" id="flashcard-container">
+            <div class="flashcard" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="word-text" id="fc-en">word</div>
+                    <div class="hint-text">클릭하여 뜻 확인</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="meaning-text" id="fc-ko">뜻</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn" id="fc-prev">이전 단어</button>
+            <button class="btn" id="fc-next">다음 단어</button>
+        </div>
+    </div>
+
+    <!-- 2. 짝맞추기 게임 뷰 -->
+    <div id="matching-view" class="view-section">
+        <div class="game-status" id="match-status">5개의 단어 짝을 맞춰보세요! (1단계)</div>
+        <div class="matching-grid" id="matching-grid">
+            <!-- 자바스크립트로 카드가 생성됩니다 -->
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn" style="display: none;" id="match-next-btn">다음 단계로</button>
+        </div>
+    </div>
+
+    <!-- 3. 테스트 뷰 -->
+    <div id="test-view" class="view-section">
+        <div id="test-box" class="test-box">
+            <div class="test-progress" id="test-progress">진행도: 1 / 20</div>
+            <div class="test-question" id="test-question">뜻이 여기에 표시됩니다.</div>
+            
+            <input type="text" id="test-input" class="test-input" placeholder="영어 단어를 입력하세요" autocomplete="off">
+            
+            <div class="feedback" id="test-feedback"></div>
+            
+            <button class="btn" id="test-submit-btn">정답 확인</button>
+            <button class="btn" id="test-next-btn" style="display: none; background-color: var(--text-muted);">다음 문제</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 중학교 수준 필수 영단어 20개
+    const vocabulary = [
+        { en: "absolute", ko: "절대적인" },
+        { en: "benefit", ko: "이익, 혜택" },
+        { en: "campaign", ko: "캠페인, 운동" },
+        { en: "decade", ko: "10년" },
+        { en: "effect", ko: "영향, 결과" },
+        { en: "facility", ko: "시설, 설비" },
+        { en: "generate", ko: "발생시키다" },
+        { en: "habit", ko: "습관" },
+        { en: "ignore", ko: "무시하다" },
+        { en: "journal", ko: "잡지, 일기" },
+        { en: "knowledge", ko: "지식" },
+        { en: "label", ko: "상표, 꼬리표" },
+        { en: "maintain", ko: "유지하다" },
+        { en: "negative", ko: "부정적인" },
+        { en: "observe", ko: "관찰하다" },
+        { en: "passion", ko: "열정" },
+        { en: "quality", ko: "질, 품질" },
+        { en: "reduce", ko: "줄이다" },
+        { en: "secret", ko: "비밀" },
+        { en: "talent", ko: "재능" }
+    ];
+
+    // 공통 유틸리티
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    // --- 탭 전환 로직 ---
+    const tabButtons = document.querySelectorAll('.nav-buttons button');
+    const viewSections = document.querySelectorAll('.view-section');
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // 버튼 상태 변경
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // 뷰 상태 변경
+            const targetId = btn.getAttribute('data-target');
+            viewSections.forEach(section => {
+                if (section.id === targetId) {
+                    section.classList.add('active');
+                } else {
+                    section.classList.remove('active');
+                }
+            });
+
+            // 각 탭에 맞는 초기화 함수 호출
+            if (targetId === 'flashcard-view') {
+                updateFlashcard();
+            } else if (targetId === 'matching-view') {
+                startMatchingGame(); // 탭 열 때마다 초기화
+            } else if (targetId === 'test-view') {
+                startTest(); // 탭 열 때마다 초기화
+            }
+        });
+    });
+
+    // --- 1. 플래시카드 로직 ---
+    let fcIndex = 0;
+    const flashcard = document.getElementById('flashcard');
+    const flashcardContainer = document.getElementById('flashcard-container');
+    const fcPrevBtn = document.getElementById('fc-prev');
+    const fcNextBtn = document.getElementById('fc-next');
+
+    function updateFlashcard() {
+        flashcard.classList.remove('flipped');
+        setTimeout(() => {
+            document.getElementById('fc-en').innerText = vocabulary[fcIndex].en;
+            document.getElementById('fc-ko').innerText = vocabulary[fcIndex].ko;
+            document.getElementById('fc-counter').innerText = `${fcIndex + 1} / ${vocabulary.length}`;
+            
+            fcPrevBtn.disabled = fcIndex === 0;
+            fcNextBtn.disabled = fcIndex === vocabulary.length - 1;
+        }, 150);
+    }
+
+    flashcardContainer.addEventListener('click', () => {
+        flashcard.classList.toggle('flipped');
+    });
+
+    fcPrevBtn.addEventListener('click', () => {
+        if (fcIndex > 0) { fcIndex--; updateFlashcard(); }
+    });
+
+    fcNextBtn.addEventListener('click', () => {
+        if (fcIndex < vocabulary.length - 1) { fcIndex++; updateFlashcard(); }
+    });
+
+
+    // --- 2. 짝맞추기 게임 로직 ---
+    let currentMatchBatch = 0;
+    let selectedMatchCard = null;
+    let matchPairsFound = 0;
+    const matchingGrid = document.getElementById('matching-grid');
+    const matchNextBtn = document.getElementById('match-next-btn');
+    const matchStatus = document.getElementById('match-status');
+
+    function startMatchingGame() {
+        currentMatchBatch = 0;
+        loadMatchBatch();
+    }
+
+    function loadMatchBatch() {
+        matchingGrid.innerHTML = '';
+        matchPairsFound = 0;
+        selectedMatchCard = null;
+        matchNextBtn.style.display = 'none';
+        matchStatus.innerText = `5개의 단어 짝을 맞춰보세요! (${currentMatchBatch + 1} / 4단계)`;
+
+        const batchWords = vocabulary.slice(currentMatchBatch * 5, (currentMatchBatch + 1) * 5);
+        let cards = [];
+        
+        batchWords.forEach(word => {
+            cards.push({ text: word.en, type: 'en', pair: word.en });
+            cards.push({ text: word.ko, type: 'ko', pair: word.en });
+        });
+
+        cards = shuffle(cards);
+
+        cards.forEach((card) => {
+            const el = document.createElement('div');
+            el.classList.add('match-card');
+            el.innerText = card.text;
+            el.dataset.pair = card.pair;
+            
+            el.addEventListener('click', () => {
+                handleMatchClick(el);
+            });
+            
+            matchingGrid.appendChild(el);
+        });
+    }
+
+    function handleMatchClick(cardEl) {
+        if (cardEl.classList.contains('matched') || cardEl.classList.contains('selected')) return;
+
+        cardEl.classList.add('selected');
+
+        if (!selectedMatchCard) {
+            selectedMatchCard = cardEl;
+        } else {
+            if (selectedMatchCard.dataset.pair === cardEl.dataset.pair) {
+                // 매치 성공
+                const card1 = selectedMatchCard;
+                const card2 = cardEl;
+                setTimeout(() => {
+                    card1.classList.remove('selected');
+                    card2.classList.remove('selected');
+                    card1.classList.add('matched');
+                    card2.classList.add('matched');
+                    matchPairsFound++;
+                    
+                    if (matchPairsFound === 5) {
+                        currentMatchBatch++;
+                        if (currentMatchBatch < 4) {
+                            matchNextBtn.style.display = 'inline-block';
+                            matchStatus.innerText = "훌륭합니다! 다음 단계를 진행하세요.";
+                        } else {
+                            matchStatus.innerText = "모든 짝맞추기를 완료했습니다!";
+                        }
+                    }
+                }, 300);
+            } else {
+                // 매치 실패
+                const card1 = selectedMatchCard;
+                const card2 = cardEl;
+                setTimeout(() => {
+                    card1.classList.remove('selected');
+                    card2.classList.remove('selected');
+                }, 500);
+            }
+            selectedMatchCard = null;
+        }
+    }
+
+    matchNextBtn.addEventListener('click', loadMatchBatch);
+
+
+    // --- 3. 실전 테스트 로직 ---
+    let testWords = [];
+    let currentTestIndex = 0;
+    let mistakeCount = 0;
+    
+    const testBox = document.getElementById('test-box');
+    const testInput = document.getElementById('test-input');
+    const testSubmitBtn = document.getElementById('test-submit-btn');
+    const testNextBtn = document.getElementById('test-next-btn');
+    const testFeedback = document.getElementById('test-feedback');
+
+    function startTest() {
+        testWords = shuffle([...vocabulary]);
+        currentTestIndex = 0;
+        // 테스트 UI 초기화 복구 (완료 화면에서 다시 돌아올 때를 대비)
+        testBox.innerHTML = `
+            <div class="test-progress" id="test-progress">진행도: 1 / 20</div>
+            <div class="test-question" id="test-question">뜻이 여기에 표시됩니다.</div>
+            <input type="text" id="test-input" class="test-input" placeholder="영어 단어를 입력하세요" autocomplete="off">
+            <div class="feedback" id="test-feedback"></div>
+            <button class="btn" id="test-submit-btn">정답 확인</button>
+            <button class="btn" id="test-next-btn" style="display: none; background-color: var(--text-muted);">다음 문제</button>
+        `;
+        
+        // 동적으로 다시 생성된 엘리먼트들에 이벤트 다시 바인딩
+        document.getElementById('test-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleTestEnter();
+        });
+        document.getElementById('test-submit-btn').addEventListener('click', checkTestAnswer);
+        document.getElementById('test-next-btn').addEventListener('click', nextTestQuestion);
+
+        loadTestQuestion();
+    }
+
+    function loadTestQuestion() {
+        if (currentTestIndex >= testWords.length) {
+            testBox.innerHTML = `
+                <h2>테스트 완료!</h2>
+                <p>모든 단어 학습을 마쳤습니다.</p><br>
+                <button class='btn' id='test-restart-btn'>처음부터 다시하기</button>
+            `;
+            document.getElementById('test-restart-btn').addEventListener('click', startTest);
+            return;
+        }
+
+        mistakeCount = 0;
+        document.getElementById('test-progress').innerText = `진행도: ${currentTestIndex + 1} / ${testWords.length}`;
+        document.getElementById('test-question').innerText = testWords[currentTestIndex].ko;
+        
+        const inputField = document.getElementById('test-input');
+        inputField.value = '';
+        inputField.disabled = false;
+        inputField.focus();
+
+        const feedback = document.getElementById('test-feedback');
+        feedback.className = 'feedback';
+        feedback.innerText = '';
+        
+        document.getElementById('test-submit-btn').style.display = 'inline-block';
+        document.getElementById('test-next-btn').style.display = 'none';
+    }
+
+    function handleTestEnter() {
+        if (document.getElementById('test-submit-btn').style.display !== 'none') {
+            checkTestAnswer();
+        } else {
+            nextTestQuestion();
+        }
+    }
+
+    function checkTestAnswer() {
+        const inputField = document.getElementById('test-input');
+        const feedback = document.getElementById('test-feedback');
+        const submitBtn = document.getElementById('test-submit-btn');
+        const nextBtn = document.getElementById('test-next-btn');
+        
+        const userAnswer = inputField.value.trim().toLowerCase();
+        const correctAnswer = testWords[currentTestIndex].en.toLowerCase();
+
+        if (userAnswer === '') return;
+
+        if (userAnswer === correctAnswer) {
+            feedback.innerText = "정답입니다!";
+            feedback.className = 'feedback correct';
+            inputField.disabled = true;
+            
+            submitBtn.style.display = 'none';
+            nextBtn.style.display = 'inline-block';
+            nextBtn.focus();
+        } else {
+            mistakeCount++;
+            feedback.className = 'feedback wrong';
+            
+            if (mistakeCount === 1) {
+                let hintStr = correctAnswer.charAt(0) + " " + "_ ".repeat(correctAnswer.length - 1).trim();
+                feedback.innerText = `틀렸습니다. 힌트: ${hintStr} (총 ${correctAnswer.length}글자)`;
+                inputField.value = '';
+                inputField.focus();
+            } else {
+                feedback.innerText = `틀렸습니다. 정답은 '${correctAnswer}' 입니다.`;
+                inputField.value = correctAnswer;
+                inputField.disabled = true;
+                
+                submitBtn.style.display = 'none';
+                nextBtn.style.display = 'inline-block';
+                nextBtn.focus();
+            }
+        }
+    }
+
+    function nextTestQuestion() {
+        currentTestIndex++;
+        loadTestQuestion();
+    }
+
+    // 초기 실행
+    updateFlashcard();
+});
+</script>
+</body>
+</html>
