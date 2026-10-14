@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중등 영단어 마스터</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --primary-hover: #357abd;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+        }
+
+        body {
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            min-height: 500px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        h1, h2 {
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        /* Buttons */
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 15px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 10px;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-back {
+            background-color: #95a5a6;
+            color: white;
+            width: auto;
+            padding: 10px 20px;
+            margin-top: 20px;
+        }
+
+        /* Flashcard Mode */
+        .flashcard {
+            width: 100%;
+            max-width: 400px;
+            height: 250px;
+            perspective: 1000px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .flashcard-inner {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .flashcard-front {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .flashcard-back {
+            background-color: var(--success);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .card-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .card-controls button {
+            width: 45%;
+            margin: 0;
+        }
+
+        .progress-text {
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+
+        /* Matching Game */
+        .match-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .match-btn {
+            background-color: #ecf0f1;
+            color: var(--text-main);
+            padding: 15px 10px;
+            width: 100%;
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .match-btn.selected {
+            background-color: #f1c40f;
+            color: white;
+        }
+
+        .match-btn.matched {
+            background-color: var(--success);
+            color: white;
+            visibility: hidden; /* Hide matched cards */
+        }
+
+        /* Test Mode */
+        .test-container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .test-question {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .test-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            border: 2px solid #bdc3c7;
+            border-radius: 10px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .test-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .feedback {
+            font-size: 16px;
+            font-weight: bold;
+            min-height: 24px;
+            margin-bottom: 15px;
+            color: var(--danger);
+        }
+
+        .hint-text {
+            color: #e67e22;
+        }
+        
+        .correct-text {
+            color: var(--success);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 메인 메뉴 -->
+    <div id="menu-view" class="view active">
+        <h1>중등 영단어 마스터 🚀</h1>
+        <p>20개의 필수 영단어를 완벽하게 외워보세요!</p>
+        <button class="btn-primary" onclick="startFlashcards()">1. 플래시카드 (학습)</button>
+        <button class="btn-primary" onclick="startMatching()">2. 짝 맞추기 (복습)</button>
+        <button class="btn-primary" style="background-color: var(--danger);" onclick="startTest()">3. 단어 테스트 (실전)</button>
+    </div>
+
+    <!-- 1. 플래시카드 뷰 -->
+    <div id="flashcard-view" class="view">
+        <h2>플래시카드</h2>
+        <div class="progress-text" id="fc-progress">1 / 20</div>
+        
+        <div class="flashcard" onclick="flipCard()">
+            <div class="flashcard-inner" id="fc-inner">
+                <div class="flashcard-front" id="fc-front">word</div>
+                <div class="flashcard-back" id="fc-back">단어</div>
+            </div>
+        </div>
+
+        <div class="card-controls">
+            <button class="btn-primary" onclick="prevCard()">이전</button>
+            <button class="btn-primary" onclick="nextCard()">다음</button>
+        </div>
+        <button class="btn-back" onclick="showMenu()">메인으로 돌아가기</button>
+    </div>
+
+    <!-- 2. 짝맞추기 뷰 -->
+    <div id="match-view" class="view">
+        <h2>짝 맞추기 게임</h2>
+        <p style="text-align: center; margin-bottom:15px; font-size: 14px;">영단어와 알맞은 뜻을 선택하세요!<br>(5단어씩 진행됩니다)</p>
+        <div class="match-grid" id="match-grid">
+            <!-- 버튼들이 자바스크립트로 생성됨 -->
+        </div>
+        <button class="btn-primary" id="match-next-btn" style="display:none;" onclick="nextMatchRound()">다음 라운드</button>
+        <button class="btn-back" onclick="showMenu()">메인으로 돌아가기</button>
+    </div>
+
+    <!-- 3. 테스트 뷰 -->
+    <div id="test-view" class="view">
+        <h2>단어 테스트</h2>
+        <div class="progress-text" id="test-progress">1 / 20</div>
+        
+        <div class="test-container">
+            <div class="test-question" id="test-question">뜻</div>
+            <div class="feedback" id="test-feedback"></div>
+            <input type="text" class="test-input" id="test-input" placeholder="영단어를 입력하세요" autocomplete="off" onkeypress="handleTestEnter(event)">
+            <button class="btn-primary" style="width: 100%; max-width: none;" onclick="checkAnswer()">확인</button>
+        </div>
+        <button class="btn-back" onclick="showMenu()">포기하고 메인으로</button>
+    </div>
+    
+    <!-- 테스트 결과 뷰 -->
+    <div id="result-view" class="view">
+        <h2>테스트 완료! 🎉</h2>
+        <h1 id="result-score" style="color: var(--primary); font-size: 48px;"></h1>
+        <p>수고하셨습니다!</p>
+        <button class="btn-primary" onclick="showMenu()">메인으로 돌아가기</button>
+    </div>
+</div>
+
+<script>
+    // 중학교 수준 필수 영단어 20개
+    const wordList = [
+        { en: "absolute", ko: "절대적인" },
+        { en: "biology", ko: "생물학" },
+        { en: "capacity", ko: "능력, 용량" },
+        { en: "decade", ko: "10년" },
+        { en: "evidence", ko: "증거" },
+        { en: "frequent", ko: "빈번한" },
+        { en: "generate", ko: "발생시키다" },
+        { en: "hesitate", ko: "주저하다" },
+        { en: "initial", ko: "처음의" },
+        { en: "justify", ko: "정당화하다" },
+        { en: "knowledge", ko: "지식" },
+        { en: "logical", ko: "논리적인" },
+        { en: "maintain", ko: "유지하다" },
+        { en: "negative", ko: "부정적인" },
+        { en: "observe", ko: "관찰하다" },
+        { en: "patience", ko: "인내심" },
+        { en: "qualify", ko: "자격을 얻다" },
+        { en: "resource", ko: "자원" },
+        { en: "strategy", ko: "전략" },
+        { en: "temporary", ko: "일시적인" }
+    ];
+
+    // 공통 유틸리티
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    }
+
+    function showMenu() {
+        showView('menu-view');
+    }
+
+    function shuffleArray(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    /* --- 1. 플래시카드 로직 --- */
+    let fcIndex = 0;
+    const fcInner = document.getElementById('fc-inner');
+    const fcFront = document.getElementById('fc-front');
+    const fcBack = document.getElementById('fc-back');
+    const fcProgress = document.getElementById('fc-progress');
+
+    function startFlashcards() {
+        fcIndex = 0;
+        document.querySelector('.flashcard').classList.remove('flipped');
+        updateFlashcard();
+        showView('flashcard-view');
+    }
+
+    function updateFlashcard() {
+        const word = wordList[fcIndex];
+        fcFront.textContent = word.en;
+        fcBack.textContent = word.ko;
+        fcProgress.textContent = `${fcIndex + 1} / ${wordList.length}`;
+        document.querySelector('.flashcard').classList.remove('flipped');
+    }
+
+    function flipCard() {
+        document.querySelector('.flashcard').classList.toggle('flipped');
+    }
+
+    function prevCard() {
+        if (fcIndex > 0) {
+            fcIndex--;
+            updateFlashcard();
+        }
+    }
+
+    function nextCard() {
+        if (fcIndex < wordList.length - 1) {
+            fcIndex++;
+            updateFlashcard();
+        }
+    }
+
+    /* --- 2. 짝맞추기 게임 로직 --- */
+    let matchWords = [];
+    let matchRound = 0;
+    let selectedBtn = null;
+    let matchedCount = 0;
+
+    function startMatching() {
+        matchRound = 0;
+        showView('match-view');
+        loadMatchRound();
+    }
+
+    function loadMatchRound() {
+        document.getElementById('match-next-btn').style.display = 'none';
+        matchedCount = 0;
+        selectedBtn = null;
+        
+        // 5단어씩 묶어서 라운드 진행
+        const roundWords = wordList.slice(matchRound * 5, (matchRound + 5));
+        if (roundWords.length === 0) {
+            alert("모든 단어의 짝을 맞추셨습니다!");
+            showMenu();
+            return;
+        }
+
+        const buttonsData = [];
+        roundWords.forEach((w, index) => {
+            buttonsData.push({ text: w.en, type: 'en', id: index });
+            buttonsData.push({ text: w.ko, type: 'ko', id: index });
+        });
+
+        const shuffled = shuffleArray(buttonsData);
+        const grid = document.getElementById('match-grid');
+        grid.innerHTML = '';
+
+        shuffled.forEach(item => {
+            const btn = document.createElement('button');
+            btn.className = 'match-btn';
+            btn.textContent = item.text;
+            btn.dataset.type = item.type;
+            btn.dataset.id = item.id;
+            btn.onclick = () => handleMatchClick(btn);
+            grid.appendChild(btn);
+        });
+    }
+
+    function handleMatchClick(btn) {
+        if (btn.classList.contains('matched') || btn.classList.contains('selected')) return;
+
+        if (!selectedBtn) {
+            btn.classList.add('selected');
+            selectedBtn = btn;
+        } else {
+            // 다른 종류(영/한)이고 id가 같으면 정답
+            if (selectedBtn.dataset.type !== btn.dataset.type && selectedBtn.dataset.id === btn.dataset.id) {
+                btn.classList.add('matched');
+                selectedBtn.classList.remove('selected');
+                selectedBtn.classList.add('matched');
+                selectedBtn = null;
+                matchedCount++;
+                
+                if (matchedCount === 5) {
+                    matchRound++;
+                    if (matchRound * 5 >= wordList.length) {
+                        setTimeout(() => {
+                            alert("게임 클리어! 완벽합니다.");
+                            showMenu();
+                        }, 500);
+                    } else {
+                        document.getElementById('match-next-btn').style.display = 'block';
+                    }
+                }
+            } else {
+                // 오답
+                btn.classList.add('selected');
+                setTimeout(() => {
+                    btn.classList.remove('selected');
+                    selectedBtn.classList.remove('selected');
+                    selectedBtn = null;
+                }, 400);
+            }
+        }
+    }
+
+    function nextMatchRound() {
+        loadMatchRound();
+    }
+
+    /* --- 3. 단어 테스트 로직 --- */
+    let testIndex = 0;
+    let errorCount = 0;
+    let score = 0;
+    let testWords = [];
+
+    const testInput = document.getElementById('test-input');
+    const testFeedback = document.getElementById('test-feedback');
+
+    function startTest() {
+        testWords = shuffleArray(wordList); // 테스트는 랜덤 순서로
+        testIndex = 0;
+        score = 0;
+        loadTestWord();
+        showView('test-view');
+    }
+
+    function loadTestWord() {
+        if (testIndex >= testWords.length) {
+            showTestResult();
+            return;
+        }
+        errorCount = 0;
+        testInput.value = '';
+        testInput.disabled = false;
+        testFeedback.textContent = '';
+        testFeedback.className = 'feedback';
+        
+        document.getElementById('test-progress').textContent = `${testIndex + 1} / ${testWords.length}`;
+        document.getElementById('test-question').textContent = testWords[testIndex].ko;
+        testInput.focus();
+    }
+
+    function handleTestEnter(event) {
+        if (event.key === 'Enter') {
+            checkAnswer();
+        }
+    }
+
+    function checkAnswer() {
+        if (testInput.disabled) return;
+        
+        const currentWord = testWords[testIndex];
+        const userAnswer = testInput.value.trim().toLowerCase();
+
+        if (userAnswer === currentWord.en) {
+            // 정답
+            if (errorCount === 0) score += 5; // 한 문제당 5점 (총 100점 만점)
+            testFeedback.textContent = "정답입니다!";
+            testFeedback.className = 'feedback correct-text';
+            testInput.disabled = true;
+            setTimeout(() => {
+                testIndex++;
+                loadTestWord();
+            }, 800);
+        } else {
+            // 오답
+            errorCount++;
+            
+            if (errorCount === 1) {
+                // 1회 오류: 힌트 제공 (첫 글자 + 빈칸)
+                let hintStr = currentWord.en[0] + " ";
+                for (let i = 1; i < currentWord.en.length; i++) {
+                    hintStr += "_ ";
+                }
+                testFeedback.textContent = `힌트: ${hintStr} (총 ${currentWord.en.length}글자)`;
+                testFeedback.className = 'feedback hint-text';
+                testInput.value = '';
+                testInput.focus();
+            } else if (errorCount >= 2) {
+                // 2회 오류: 정답 제공 및 다음으로 넘어감
+                testFeedback.textContent = `정답은 '${currentWord.en}' 입니다.`;
+                testFeedback.className = 'feedback';
+                testInput.value = currentWord.en;
+                testInput.disabled = true;
+                
+                setTimeout(() => {
+                    testIndex++;
+                    loadTestWord();
+                }, 1500);
+            }
+        }
+    }
+
+    function showTestResult() {
+        showView('result-view');
+        document.getElementById('result-score').textContent = `${score}점 / 100점`;
+    }
+
+</script>
+</body>
+</html>
